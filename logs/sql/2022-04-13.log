@@ -1,0 +1,7 @@
+2022-04-13 17:36:20.740 [DEBU] {c8ba2dfa156be516891036105499e507} [102 ms] [default] [rows:5  ] SHOW FULL COLUMNS FROM `user` 
+2022-04-13 17:36:20.786 [DEBU] {c8ba2dfa156be516891036105499e507} [ 45 ms] [default] [rows:0  ] SELECT `id`,`name`,`password`,`nickename`,`status` FROM `user` WHERE `name`='asimov' AND `password`='b5f5f6293a7e6bcb3f939f7f4cdd1c27' LIMIT 1 
+2022-04-13 17:36:29.573 [DEBU] {e86fbf0e186be5168a103610357265c4} [  1 ms] [default] [rows:0  ] SELECT `id`,`name`,`password`,`nickename`,`status` FROM `user` WHERE `name`='asimov' AND `password`='b5f5f6293a7e6bcb3f939f7f4cdd1c27' LIMIT 1 
+2022-04-13 17:57:05.858 [DEBU] {589d83e1376ce516f43a662879737f2a} [ 90 ms] [default] [rows:5  ] SHOW FULL COLUMNS FROM `user` 
+2022-04-13 17:57:05.876 [DEBU] {589d83e1376ce516f43a662879737f2a} [ 16 ms] [default] [rows:0  ] SELECT `id`,`name`,`password`,`nickename`,`status` FROM `user` WHERE `name`='asimov' AND `password`='b5f5f6293a7e6bcb3f939f7f4cdd1c27' LIMIT 1 
+2022-04-13 18:04:42.551 [DEBU] {68bc443ba26ce516f002ab54c5fe09e0} [ 15 ms] [default] [rows:5  ] SHOW FULL COLUMNS FROM `user` 
+2022-04-13 18:04:42.554 [DEBU] {68bc443ba26ce516f002ab54c5fe09e0} [  2 ms] [default] [rows:0  ] SELECT `id`,`name`,`password`,`nickename`,`status` FROM `user` WHERE `name`='asimov' AND `password`='b5f5f6293a7e6bcb3f939f7f4cdd1c27' LIMIT 1 
