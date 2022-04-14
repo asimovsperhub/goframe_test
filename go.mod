@@ -2,7 +2,12 @@ module firstproject
 
 go 1.18
 
-require github.com/gogf/gf/v2 v2.0.4
+require (
+	github.com/gogf/gf-jwt/v2 v2.0.1
+	github.com/gogf/gf/v2 v2.0.4
+)
+
+require github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
 
 require (
 	//github.com/o1egl/govatar v0.3.0

@@ -12,7 +12,9 @@ func main() {
 	data["name"] = []string{"asimov12345678"}
 	data["password"] = []string{"asimov123"}
 	data["Nickename"] = []string{"王1234"}
-	resp, err := http.PostForm("http://127.0.0.1:8000/register", data)
+	//resp, err := http.PostForm("http://127.0.0.1:8000/register", data)
+	resp, err := http.Get("http://127.0.0.1:8000/user/info")
+	// resp, err := http.PostForm("http://127.0.0.1:8000/login", data)
 	if err != nil {
 		panic(err)
 	}
@@ -23,6 +25,7 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(string(body))
+	fmt.Println(resp.Header)
 }
 
 //curl -H "Content-Type: application/json" -X POST -d '{"name": "asimov", "password":"asimov123"}' "http://127.0.0.1:8000/login"
