@@ -8,7 +8,7 @@ type UserLoginInput struct {
 
 // UserRegisterInput 用户注册
 type UserRegisterInput struct {
-	Name     string // 账号
-	NikeName string //昵称
-	Password string // 密码(明文)
+	Name      string // 账号
+	Nickename string //昵称
+	Password  string // 密码(明文)
 }
