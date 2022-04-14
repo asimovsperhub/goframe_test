@@ -20,9 +20,9 @@ type cRegister struct {
 func (*cRegister) Register(ctx context.Context, req *v1.RegisterDoReq) (res *v1.RegisterDoRes, err error) {
 	// 注册 service
 	if err = service.User().Register(ctx, model.UserRegisterInput{
-		Name:     req.Name,
-		Password: req.Password,
-		NikeName: req.NikeName,
+		Name:      req.Name,
+		Password:  req.Password,
+		Nickename: req.Nickename,
 	}); err != nil {
 		return &v1.RegisterDoRes{fmt.Sprintf("register failed:%s", err)}, nil
 	} else {

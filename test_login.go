@@ -9,9 +9,9 @@ import (
 
 func main() {
 	data := make(url.Values)
-	data["name"] = []string{"asimov12"}
+	data["name"] = []string{"asimov12345678"}
 	data["password"] = []string{"asimov123"}
-	data["nikeName"] = []string{"王12"}
+	data["Nickename"] = []string{"王1234"}
 	resp, err := http.PostForm("http://127.0.0.1:8000/register", data)
 	if err != nil {
 		panic(err)
