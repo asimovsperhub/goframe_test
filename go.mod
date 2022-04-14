@@ -5,6 +5,7 @@ go 1.18
 require github.com/gogf/gf/v2 v2.0.4
 
 require (
+	//github.com/o1egl/govatar v0.3.0
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/clbanning/mxj/v2 v2.5.5 // indirect

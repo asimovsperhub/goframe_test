@@ -6,8 +6,10 @@ import (
 	"firstproject/internal/model/entity"
 	"firstproject/internal/service/internal/dao"
 	"github.com/gogf/gf/v2/crypto/gmd5"
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/util/gconv"
 )
 
 type sUser struct{}
@@ -48,6 +50,53 @@ func (s *sUser) Login(ctx context.Context, in model.UserLoginInput) error {
 	if userEntity == nil {
 		// 给定err
 		return gerror.New(`账号或密码错误`)
+	}
+	return nil
+}
+
+// 用户注册。
+// 事务使用函数f包装事务逻辑。 失败回滚
+func (s *sUser) Register(ctx context.Context, in model.UserRegisterInput) error {
+	return dao.User.Transaction(ctx, func(ctx context.Context, tx *gdb.TX) error {
+		var user *entity.User
+		// Struct将params键值对映射到相应的Struct对象的属性
+		if err := gconv.Struct(in, &user); err != nil {
+			return err
+		}
+		if err := s.CheckPassportUnique(ctx, user.Name); err != nil {
+			return err
+		}
+		if err := s.CheckNicknameUnique(ctx, user.Nickename); err != nil {
+			return err
+		}
+		user.Password = s.EncryptPassword(user.Name, user.Password)
+		//  写入数据库
+		_, err := dao.User.Ctx(ctx).Data(user).OmitEmpty().Save()
+		return err
+	})
+}
+
+// 检测给定的账号是否唯一
+func (s *sUser) CheckPassportUnique(ctx context.Context, name string) error {
+	n, err := dao.User.Ctx(ctx).Where(dao.User.Columns().Name, name).Count()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return gerror.Newf(`账号"%s"已被占用`, name)
+	}
+	return nil
+}
+
+// 检测给定的昵称是否唯一
+func (s *sUser) CheckNicknameUnique(ctx context.Context, nickname string) error {
+	// 查询数据库改昵称数量
+	n, err := dao.User.Ctx(ctx).Where(dao.User.Columns().Nickename, nickname).Count()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return gerror.Newf(`昵称"%s"已被占用`, nickname)
 	}
 	return nil
 }
