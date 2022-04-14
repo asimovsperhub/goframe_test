@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
+	"firstproject/internal/controller"
+	"firstproject/internal/service"
 
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
-
-	"firstproject/internal/controller"
 )
 
 var (
@@ -23,6 +23,14 @@ var (
 				group.Bind(
 					controller.Hello, controller.Login, controller.Register,
 				)
+				// 需要鉴权的接口
+				group.Group("/", func(group *ghttp.RouterGroup) {
+					group.Middleware(service.Middleware().Auth)
+					group.ALLMap(g.Map{
+						"/user/info": controller.User.Info,
+					})
+				})
+
 			})
 			s.Run()
 			return nil

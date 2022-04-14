@@ -38,7 +38,7 @@ func (s *sUser) EncryptPassword(name, password string) string {
 
 // 执行登录
 func (s *sUser) Login(ctx context.Context, in model.UserLoginInput) error {
-	//  去数据库查询用户名密码
+	//  去数据库查询用户信息
 	userEntity, err := s.GetUserByPassportAndPassword(
 		ctx,
 		in.Name,
@@ -51,6 +51,10 @@ func (s *sUser) Login(ctx context.Context, in model.UserLoginInput) error {
 	if userEntity == nil {
 		// 给定err
 		return gerror.New(`账号或密码错误`)
+	}
+	// set token
+	if err := Session().SetUser(ctx, userEntity); err != nil {
+		return err
 	}
 	return nil
 }
@@ -102,4 +106,11 @@ func (s *sUser) CheckNicknameUnique(ctx context.Context, nickname string) error 
 		return gerror.Newf(`昵称"%s"已被占用`, nickname)
 	}
 	return nil
+}
+
+func (s *sUser) GetUserInfo(ctx context.Context, in model.UserLoginInput) map[string]interface{} {
+	return g.Map{
+		"id":   1,
+		"name": in.Name,
+	}
 }

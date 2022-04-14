@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/gogf/gf/v2/frame/g"
+	"time"
 )
 
 // get请求
@@ -20,5 +21,7 @@ type LoginDoReq struct {
 	Password string `json:"password" v:"required#请输入密码"   dc:"密码(明文)"`
 }
 type LoginDoRes struct {
-	Result string `json:"result" dc:"登录结果"`
+	Token  string    `json:"token"`
+	Expire time.Time `json:"时间戳"`
+	Result string    `json:"result" dc:"登录结果"`
 }
