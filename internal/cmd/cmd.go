@@ -21,7 +21,7 @@ var (
 				//  结果返回后置中间价
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
 				group.Bind(
-					controller.Hello, controller.Login,
+					controller.Hello, controller.Login, controller.Register,
 				)
 			})
 			s.Run()
