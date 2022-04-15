@@ -108,6 +108,7 @@ func (s *sUser) CheckNicknameUnique(ctx context.Context, nickname string) error 
 	return nil
 }
 
+// jwt用户私有信息
 func (s *sUser) GetUserInfo(ctx context.Context, in model.UserLoginInput) map[string]interface{} {
 	return g.Map{
 		"id":   1,

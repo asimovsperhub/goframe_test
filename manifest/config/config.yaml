@@ -1,3 +1,4 @@
+# 服务配置
 server:
   address:     ":8000"
   openapiPath: "/api.json"
