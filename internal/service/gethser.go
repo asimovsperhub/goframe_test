@@ -15,7 +15,7 @@ func Gethser() *sGethser {
 }
 
 // 创建合约对象
-func (s *sGethser) CommonEth(ctx context.Context, ethconnhost, calls string) interface{} {
+func (s *sGethser) CommonEth(ctx context.Context, ethconnhost, calls string) (*tools.ERC20Caller, error) {
 	// Dial connects a client to the given URL
 	// ethconnhost 以太坊地址  calls 智能合约账户地址
 	conn, err := ethclient.Dial(ethconnhost)
@@ -29,12 +29,19 @@ func (s *sGethser) CommonEth(ctx context.Context, ethconnhost, calls string) int
 	if err != nil {
 		panic("创建合约对象出错")
 	}
-	return gethObject
+	return gethObject, nil
 }
 
 // todo 调用合约对象处理业务逻辑
 func (s *sGethser) DoFunc(ctx context.Context) error {
 	//
-	s.CommonEth(ctx, "", "")
+	gethObject, err := s.CommonEth(ctx, "", "")
+	if err != nil {
+		return err
+	}
+
+	// 调用合约方法
+	gethObject.Name(nil)
+
 	return nil
 }
