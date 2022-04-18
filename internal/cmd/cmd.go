@@ -4,7 +4,6 @@ import (
 	"context"
 	"firstproject/internal/controller"
 	"firstproject/internal/service"
-
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/gogf/gf/v2/os/gcmd"
@@ -21,7 +20,7 @@ var (
 				//  结果返回后置中间价
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
 				group.Bind(
-					controller.Hello, controller.Login, controller.Register,
+					controller.Hello, controller.Login, controller.Register, controller.Geth,
 				)
 				// 需要鉴权的接口
 				group.Group("/", func(group *ghttp.RouterGroup) {
