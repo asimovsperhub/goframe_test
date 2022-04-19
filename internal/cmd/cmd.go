@@ -24,6 +24,7 @@ var (
 				)
 				// 需要鉴权的接口
 				group.Group("/", func(group *ghttp.RouterGroup) {
+					// 给这个组加权限中间件
 					group.Middleware(service.Middleware().Auth)
 					group.ALLMap(g.Map{
 						"/user/info": controller.User.Info,
