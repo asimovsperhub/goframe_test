@@ -28,7 +28,9 @@ func (c *cLogin) Login(ctx context.Context, req *v1.LoginDoReq) (res *v1.LoginDo
 		res = &v1.LoginDoRes{}
 		res.Result = "login failed"
 	} else {
+		// 登录成功给客户端返回token
 		res = &v1.LoginDoRes{}
+		// 获取token
 		res.Token, res.Expire = service.Auth().LoginHandler(ctx)
 		res.Result = "login success"
 		return
