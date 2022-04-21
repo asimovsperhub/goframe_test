@@ -1,6 +1,6 @@
 
 
-// dao生成
+# dao生成
 # GoFrame CLI tool configuration.
 gfcli:
   gen:

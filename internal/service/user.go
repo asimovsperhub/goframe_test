@@ -115,3 +115,58 @@ func (s *sUser) GetUserInfo(ctx context.Context, in model.UserLoginInput) map[st
 		"name": in.Name,
 	}
 }
+func (s *sUser) UpdateUser(ctx context.Context) {
+	// 直接update（要改的数据 ,条件字段,value）
+	g.Model("user").Update("name='test'", "name", "asimov123")
+	// 要改的数据 where 过滤条件
+	g.Model("user").Data("name='test'").Where("name", "asimov123").Update()
+	// Counter
+
+}
+
+func (s *sUser) DeleteUser(ctx context.Context) {
+	dao.User.Ctx(ctx).Where("name", "asimov123").Delete()
+	//
+	g.Model("user").Where("name", "asimov123").Delete()
+	// DELETE FROM `user` ORDER BY `login_time` asc LIMIT 10
+	g.Model("user").Order("id asc").Limit(10).Delete()
+	// 直接调delete(条件) DELETE FROM `user` WHERE `score`<60
+	g.Model("user").Delete("status =", 0)
+
+}
+
+func (s *sUser) FindUser(ctx context.Context) (user []*entity.User, err error) {
+	// select  *  from user where status=1 limit 0,1(其实索引,限制数量)
+	g.Model("user").Where("status=?", 1).Limit(0, 1).All()
+	//
+	g.Model("user").Where("status=1").Limit(0, 1).All()
+	// 指定字段
+	g.Model("user").Fields("name,status").Where("status=?", 1).Limit(0, 1).All()
+	// and
+	g.Model("user").Where("name", "asimov123").Where("status", 1).One()
+	// where + slice  变量查询
+	g.Model("user").Where("status=? AND name like ?", g.Slice{1, "asimov%"}).All()
+	// where + map
+	g.Model("user").Where(g.Map{"status": 1, "name like": "asimov"}).All()
+	// wheref
+	g.Model("user").Wheref("status=? and name like in (?)", 1, g.Slice{"asimov", "asimov123"})
+	// wherepri 主键查询,对该表的主键智能识别 id
+	g.Model("user").WherePri(g.Slice{1, 2, 3})
+	// 嵌套查询
+	g.Model("user").Wheref("status in (?)", g.Model("user").Fields("status").Wheref("name in (?)", g.Slice{"asimov", "asimov123"})).Scan(&user)
+	// distinct 查询
+	// 定义返回结果
+	//var(
+	//	user []*entity.User
+	//)
+	dao.User.Ctx(ctx).Wheref("status=? and name like in (?)", 1, g.Slice{"asimov", "asimov123"}).Scan(&user)
+	res, err := dao.User.Ctx(ctx).Wheref("status=? and name like in (?)", 1, g.Slice{"asimov", "asimov123"}).All()
+	//
+	if len(res) == 0 || res.IsEmpty() {
+		return
+	} else {
+		println(user)
+	}
+
+	return
+}
