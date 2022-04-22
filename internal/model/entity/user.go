@@ -6,9 +6,11 @@ package entity
 
 // User is the golang structure for table user.
 type User struct {
-	Id        int64  `json:"id"        description:"UID"`
-	Name      string `json:"name"      description:"账号"`
-	Password  string `json:"password"  description:"MD5密码"`
-	Nickename string `json:"nickename" description:"昵称"`
-	Status    int    `json:"status"    description:"状态0:启用 1:禁用"`
+	Id          int64  `json:"id"          description:"UID"`
+	Name        string `json:"name"        description:"账号"`
+	Password    string `json:"password"    description:"MD5密码"`
+	Nickename   string `json:"nickename"   description:"昵称"`
+	Status      int    `json:"status"      description:"状态0:启用 1:禁用"`
+	Cpublickey  string `json:"cpublickey"  description:""`
+	Sprivatekey string `json:"sprivatekey" description:""`
 }

@@ -20,7 +20,7 @@ var (
 				//  结果返回后置中间价
 				group.Middleware(ghttp.MiddlewareHandlerResponse)
 				group.Bind(
-					controller.Hello, controller.Login, controller.Register, controller.Geth,
+					controller.Hello, controller.Login, controller.Register, controller.Geth, controller.Rsa,
 				)
 				// 需要鉴权的接口
 				group.Group("/", func(group *ghttp.RouterGroup) {

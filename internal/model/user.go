@@ -12,3 +12,5 @@ type UserRegisterInput struct {
 	Nickename string //昵称
 	Password  string // 密码(明文)
 }
+
+//
