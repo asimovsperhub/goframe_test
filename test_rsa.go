@@ -7,13 +7,14 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/asn1"
-	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"strings"
 )
 
-// RAS管理服务
 func Rsa(publicKey, privateKey string) *sRsa {
 	rsaObj := &sRsa{
 		privateKey: privateKey,
@@ -92,114 +93,17 @@ func (s *sRsa) Encrypt(data []byte) ([]byte, error) {
 }
 
 /**
- * 解密
- */
-func (s *sRsa) Decrypt(secretData []byte) ([]byte, error) {
-	blockLength := s.rsaPublicKey.N.BitLen() / 8
-	// 服务端用给客户端公钥对应的私钥解密（如果公钥被拦截 无法识别用户 需要用到签名）
-	if len(secretData) <= blockLength {
-		return rsa.DecryptPKCS1v15(rand.Reader, s.rsaPrivateKey, secretData)
-	}
-
-	buffer := bytes.NewBufferString("")
-
-	pages := len(secretData) / blockLength
-	for index := 0; index <= pages; index++ {
-		start := index * blockLength
-		end := (index + 1) * blockLength
-		if index == pages {
-			if start == len(secretData) {
-				continue
-			}
-			end = len(secretData)
-		}
-
-		chunk, err := rsa.DecryptPKCS1v15(rand.Reader, s.rsaPrivateKey, secretData[start:end])
-		if err != nil {
-			return nil, err
-		}
-		buffer.Write(chunk)
-	}
-	return buffer.Bytes(), nil
-}
-
-/**
  * 签名 客户端需要调用的接口，（客户本地的私钥和加密过的数据请求服务端）
  */
 func (s *sRsa) Sign(data []byte, algorithmSign crypto.Hash) ([]byte, error) {
 	hash := algorithmSign.New()
 	hash.Write(data)
-	//   用 用户私钥做签名
+	//   用户私钥做签名
 	sign, err := rsa.SignPKCS1v15(rand.Reader, s.rsaPrivateKey, algorithmSign, hash.Sum(nil))
 	if err != nil {
 		return nil, err
 	}
 	return sign, err
-}
-
-/**
- * 验签 服务端用客户端事先给服务端的公钥和签名 验签 （验签完成后才会去执行解密数据）
- */
-func (s *sRsa) Verify(data []byte, sign []byte, algorithmSign crypto.Hash) bool {
-	h := algorithmSign.New()
-	h.Write(data)
-	// 用c端用户公钥和签名做验签
-	// 客户公钥需要保存在服务端
-	return rsa.VerifyPKCS1v15(s.rsaPublicKey, algorithmSign, h.Sum(nil), sign) == nil
-}
-
-/**
- * 生成pkcs1格式公钥私钥
- */
-func (s *sRsa) CreateKeys(keyLength int) (privateKey, publicKey string) {
-	// 随机生成密钥对
-	rsaPrivateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
-	if err != nil {
-		return
-	}
-
-	privateKey = string(pem.EncodeToMemory(&pem.Block{
-		Type: "RSA PRIVATE KEY",
-		//pkcs1
-		Bytes: x509.MarshalPKCS1PrivateKey(rsaPrivateKey),
-	}))
-
-	derPkix, err := x509.MarshalPKIXPublicKey(&rsaPrivateKey.PublicKey)
-	if err != nil {
-		return
-	}
-
-	publicKey = string(pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: derPkix,
-	}))
-	return
-}
-
-/**
- * 生成pkcs8格式公钥私钥
- */
-func (s *sRsa) CreatePkcs8Keys(keyLength int) (privateKey, publicKey string) {
-	rsaPrivateKey, err := rsa.GenerateKey(rand.Reader, keyLength)
-	if err != nil {
-		return
-	}
-
-	privateKey = string(pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: s.MarshalPKCS8PrivateKey(rsaPrivateKey),
-	}))
-
-	derPkix, err := x509.MarshalPKIXPublicKey(&rsaPrivateKey.PublicKey)
-	if err != nil {
-		return
-	}
-
-	publicKey = string(pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: derPkix,
-	}))
-	return
 }
 
 func (s *sRsa) MarshalPKCS8PrivateKey(key *rsa.PrivateKey) []byte {
@@ -216,38 +120,60 @@ func (s *sRsa) MarshalPKCS8PrivateKey(key *rsa.PrivateKey) []byte {
 	return k
 }
 
+func POST(test_url string, data url.Values) {
+	resp, err := http.PostForm(test_url, data)
+	if err != nil {
+		panic(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(body))
+	//fmt.Println(resp.Header)
+}
+
 func main() {
-	//content   := strings.Repeat("H", 244)+"e"
-	//content   := strings.Repeat("H", 245)+"e"
-	content := strings.Repeat("H", 24270) + "e"
-	//privateKey, publicKey := NewRsa("", "").CreateKeys(1024)
-	privateKey, publicKey := Rsa("", "").CreatePkcs8Keys(2048)
-	fmt.Printf("公钥：%v\n私钥：%v\n", publicKey, privateKey)
-
-	rsaObj := Rsa(publicKey, privateKey)
-	// 加密
-	secretData, err := rsaObj.Encrypt([]byte(content))
+	// 测试解密
+	// 需要带服务端给的 publicKey 请求get_key接口获取
+	publicKey := "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArDc0i4ZWuEqpbPvrHi6e\\nxLJIDHnreYMuJfeRPJq0Az0E4tsrlwQXy0hsmk5nIGwrdEBKJ30Er75O4V3SfwcU\\nFZYqnZ4vdqCIkTzwTYWGPOXb1mmbs8KuJzmmF7YfhwLH+DAbQOvJYteZqTWQiQtq\\njcw50rm8x3ifzB4QhdetJHQfdA8OaBXdzHeAAD8gtPilOi66n1lrR1CkS6uVpquP\\nRq0eVlJnJ56IfUVKsrP9bVH0dFfWcL7qXO8zJc3oJ2V45SobvXksGJbq6h3kGc99\\nU+k/bm9uppaRg/zJJ0IM26ioRQ0yl5NmIwfmVfSXlvuku47Fi5i7RMOWjW/ZJBM5\\n1wIDAQAB\\n-----END PUBLIC KEY-----\\n"
+	// 私钥会在数据库查询当前用户的
+	pub := strings.ReplaceAll(publicKey, "\\n", "\n")
+	rsaObj := Rsa(pub, "")
+	// 加密内容
+	secretData, err := rsaObj.Encrypt([]byte("test"))
 	if err != nil {
-		fmt.Println(err)
+		println(err)
 	}
-	// 解密
-	plainData, err := rsaObj.Decrypt(secretData)
-	if err != nil {
-		fmt.Print(err)
-	}
+	data1 := make(url.Values)
+	data1["name"] = []string{"asimov123"}
+	data1["secret"] = []string{string(secretData)}
+	data1["publickey"] = []string{pub}
+	test_url := "http://127.0.0.1:8000/decrypt"
+	POST(test_url, data1) //{"code":0,"message":"","data":{"result":"Decrypt success:test"}}
 
-	data := []byte(strings.Repeat(content, 200))
-	//sign,_ := rsaObj.Sign(data, crypto.SHA1)
-	//verify := rsaObj.Verify(data, sign, crypto.SHA1)
-	// 签名
-	sign, _ := rsaObj.Sign(data, crypto.SHA256)
-	// 验签
-	verify := rsaObj.Verify(data, sign, crypto.SHA256)
+	// 测试签名
+	// 先push本地公钥
+	public := "-----BEGIN PUBLIC KEY-----\\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5ZPKd/oNXOp9Mhr6DnWd\\na1DEw+YjVVKKRY8edibRlvGhkAx3rKeLbNO1ZYhyYza8YPQEDjrAnZjD/prfh+HW\\nhtA39LLJjDXAjTlGb/2OsmxRAtmPALoPBbFHladV2O6ZBWI+p1sY+ODXRM1NRpKB\\n7aJut6Kg+wo/B0DwNioWPlqqH2OHxniwtTT9ZUCYQMXjCUmoa5a9LZBoFzvXmgnI\\nkeFpTeGJb0fJoZ7YUoZ+mUE5NhzXiLspcO9ZzaKkJlUSkYuJ0D5PR9s3tzIniifb\\nYrfPBWFyLIYpLEW4tvDmR3N993GRXyERJemVsZjBbnLr5mLVIYas9o0rmhEU5oMI\\nRQIDAQAB\\n-----END PUBLIC KEY-----\\n"
+	data2 := make(url.Values)
+	data2["name"] = []string{"asimov123"}
+	data2["public"] = []string{strings.ReplaceAll(public, "\\n", "\n")}
+	test_url1 := "http://127.0.0.1:8000/push_key"
+	POST(test_url1, data2)
 
-	fmt.Printf(" 加密：%v\n 解密：%v\n 签名：%v\n 验签结果：%v\n",
-		hex.EncodeToString(secretData),
-		string(plainData),
-		hex.EncodeToString(sign),
-		verify,
-	)
+	// 签署信息
+	data := []byte(strings.Repeat("test", 200))
+	// 需要用户本地私钥
+	rsaPrivateKey := "-----BEGIN PRIVATE KEY-----\\nMIIEvAIBADALBgkqhkiG9w0BAQEEggSoMIIEpAIBAAKCAQEA5ZPKd/oNXOp9Mhr6\\nDnWda1DEw+YjVVKKRY8edibRlvGhkAx3rKeLbNO1ZYhyYza8YPQEDjrAnZjD/prf\\nh+HWhtA39LLJjDXAjTlGb/2OsmxRAtmPALoPBbFHladV2O6ZBWI+p1sY+ODXRM1N\\nRpKB7aJut6Kg+wo/B0DwNioWPlqqH2OHxniwtTT9ZUCYQMXjCUmoa5a9LZBoFzvX\\nmgnIkeFpTeGJb0fJoZ7YUoZ+mUE5NhzXiLspcO9ZzaKkJlUSkYuJ0D5PR9s3tzIn\\niifbYrfPBWFyLIYpLEW4tvDmR3N993GRXyERJemVsZjBbnLr5mLVIYas9o0rmhEU\\n5oMIRQIDAQABAoIBAGNpgwQ/EGhK1hnLWrrGLXuaBwp5bpV035FNbzhkiN+fFIIH\\nFA98ocBnUKZ91mKmAh7Nq6/puxzDWSO4NtFldvr70S8x+FqxsAa3ZYv7NT6H7vCX\\n+veqmfSyFrh0NJVyhGqzZ0QbC45B9pXBfRPxPzgC3YTBdIognrhqY1phES7AS9hQ\\ntOfDD5B5jiAaIWXuDX9aXBJWT+NV0p59l+/xRTVen9bSVU3rl3rM1T7w5/Ax2l4G\\nvv603m4MIEMqXvufhvErmwBMNrpLIEjvy6zmfTqXoOCWoTIl0GNLQNaMulGvAf6T\\nL6xJ+kJ5BMxaeZVm4GU6QBaFpJ2gMVRekfXJHcUCgYEA6tRXywQcirvKgrb5NoGz\\nYf9Q5haXzdDbJHs6HbSySfS69fGurhaOJzywPUxa907OGbJ3zFMEpA3Z/R5Lzt5j\\nKBYXMOC7J9bN8jsPiR6RAtFIKzYDSX2/Xln3jydNLmVfvGgU4GqZmsacigNcG2hi\\nZ6qUj2j0qthPoQ7nu6YUszsCgYEA+kY7mXc+k0q++KGzm7syxHcmtP44w9llQmp0\\nLXlVm55scyYN9fbsTOIMDtNYgc4nlAcDT3vcDh/YxFAOZ3ZhFSc0aCCejxOUgV+F\\nSpWIxb22FCcN0m/yZx03hzB02P6dqxWEYVxcdushESchbvicRJUNIElyMylbDrg6\\n6Lk8en8CgYBekRSp1QYJeIadDUJfCOxMUp0pi3+miq01i8pjnBkQX1XLJYDK6ppk\\ngrQWe2FGpp2pC43i4qvDxTA8Fq9Ap54Wzo6YSGgWKxLUsaQX/A85qz386Mt6FQGz\\n5VckdxdFz9016lQ966/f/IudqKy2/NpkFPWuqv2cr2+h1HbNwpwjcQKBgQD4QBg4\\nNub0FW1ulH7jF4HZDVNwrsbBxe9CPPP2c2duUGvEoFeyxfZIoORTBGLDhykNFRO8\\nkOCLhh1vRPW0vOC5qcS7ELgWtdZVqdk+TSt48aAdR0vXlEF+9KUyzObqo0zj+hjw\\ntjvlnX+UUxs/xwzCnpKBlzjW9Mukwytz0uHhowKBgQCNk8zbbWgU8MXiylLQxcdu\\n45AFt7b8UW9H3y9I7ds/l8mQF9aHvAykpp8OSdNP5dASlYaFzq+2RaFMTUcZClxa\\ntXSxuPLAnUXDok5oP2A6SCX1LA9vJ2kxpLprh4BHaKwevbmx6qtyRHTJyc+V9L5a\\nTiD4zVzrW9Ez13heA3P4RQ==\\n-----END PRIVATE KEY-----\\n"
+	rsaObj1 := Rsa("", strings.ReplaceAll(rsaPrivateKey, "\\n", "\n"))
+	sign, _ := rsaObj1.Sign(data, crypto.SHA256)
+	data3 := make(url.Values)
+	data3["name"] = []string{"asimov123"}
+	data3["sign"] = []string{string(sign)}
+	data3["data"] = []string{string(data)}
+	test_url2 := "http://127.0.0.1:8000/verify"
+	POST(test_url2, data3) //{"code":0,"message":"","data":{"result":true}}
+
 }

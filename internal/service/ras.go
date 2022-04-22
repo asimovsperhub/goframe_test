@@ -17,50 +17,17 @@ import (
 )
 
 // RAS管理服务
-func Rsa(publicKey, privateKey string) *sRsa {
+func Rsa() *sRsa {
 	return &sRsa{}
 }
 
 type sRsa struct {
 }
 
-///**
-// * 加密
-// */
-//func (s *sRsa) Encrypt(data []byte) ([]byte, error) {
-//	// 客户端用服务端给的公钥进行数据加密 （客户端调用sdk）
-//	blockLength := rsaPublicKey.N.BitLen()/8 - 11
-//	if len(data) <= blockLength {
-//		return rsa.EncryptPKCS1v15(rand.Reader, rsaPublicKey, []byte(data))
-//	}
-//
-//	buffer := bytes.NewBufferString("")
-//
-//	pages := len(data) / blockLength
-//
-//	for index := 0; index <= pages; index++ {
-//		start := index * blockLength
-//		end := (index + 1) * blockLength
-//		if index == pages {
-//			if start == len(data) {
-//				continue
-//			}
-//			end = len(data)
-//		}
-//
-//		chunk, err := rsa.EncryptPKCS1v15(rand.Reader, rsaPublicKey, data[start:end])
-//		if err != nil {
-//			return nil, err
-//		}
-//		buffer.Write(chunk)
-//	}
-//	return buffer.Bytes(), nil
-//}
-
 /**
  * 解密
  */
-func (s *sRsa) Decrypt(secretData []byte, name string) ([]byte, error) {
+func (s *sRsa) Decrypt(secretData []byte, name, publicKey string) ([]byte, error) {
 	var (
 		user *entity.User
 		ctx  = gctx.New()
@@ -72,7 +39,6 @@ func (s *sRsa) Decrypt(secretData []byte, name string) ([]byte, error) {
 	// 解码将找到下一个PEM格式化块(证书，私钥，etc)
 	block, _ := pem.Decode([]byte(user.Sprivatekey))
 	var rsaPrivateKey *rsa.PrivateKey
-	var rsaPublicKey *rsa.PublicKey
 	// 判断私钥类型
 	//pkcs1
 	if strings.Index(user.Sprivatekey, "BEGIN RSA") > 0 {
@@ -81,6 +47,10 @@ func (s *sRsa) Decrypt(secretData []byte, name string) ([]byte, error) {
 		privateKey, _ := x509.ParsePKCS8PrivateKey(block.Bytes)
 		rsaPrivateKey = privateKey.(*rsa.PrivateKey)
 	}
+	// 提取公钥
+	block_, _ := pem.Decode([]byte(publicKey))
+	publicKey_, _ := x509.ParsePKIXPublicKey(block_.Bytes)
+	rsaPublicKey := publicKey_.(*rsa.PublicKey)
 
 	blockLength := rsaPublicKey.N.BitLen() / 8
 	// 服务端用给客户端公钥对应的私钥解密（如果公钥被拦截 无法识别用户 需要用到签名）
@@ -109,20 +79,6 @@ func (s *sRsa) Decrypt(secretData []byte, name string) ([]byte, error) {
 	}
 	return buffer.Bytes(), nil
 }
-
-///**
-// * 签名 客户端需要调用的接口，（客户本地的私钥和加密过的数据请求服务端）
-// */
-//func (s *sRsa) Sign(data []byte, algorithmSign crypto.Hash) ([]byte, error) {
-//	hash := algorithmSign.New()
-//	hash.Write(data)
-//	//   用 用户私钥做签名
-//	sign, err := rsa.SignPKCS1v15(rand.Reader, rsaPrivateKey, algorithmSign, hash.Sum(nil))
-//	if err != nil {
-//		return nil, err
-//	}
-//	return sign, err
-//}
 
 /**
  * 验签 服务端用客户端事先给服务端的公钥和签名 验签 （验签完成后才会去执行解密数据）
@@ -222,8 +178,15 @@ func (s *sRsa) GetKey(ctx context.Context, name string, keyLength int) (publicKe
 	return
 }
 
-//
+//  push本地公钥
 func (s sRsa) Pushkey(ctx context.Context, public, name string) error {
 	_, err := dao.User.Ctx(ctx).Update(fmt.Sprintf("cpublickey='%s'", public), "name", name)
 	return err
+}
+
+// 返回公私钥
+
+func (s *sRsa) GetKeyPri(ctx context.Context, keyLength int) (privateKey, publicKey string) {
+	privateKey, publicKey = s.CreatePkcs8Keys(keyLength)
+	return
 }
